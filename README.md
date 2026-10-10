@@ -1,9 +1,17 @@
-# River — Helpdesk Ticket Management System
+<h3 align="center">River — Helpdesk Ticket Management System</h3>
+
+
+## About
+
+River is a helpdesk ticket management system designed to organize technical support requests, track ticket progress, and provide a foundation for role-based support workflows.
+
+The project is being developed incrementally, starting with a secure REST API and expanding toward a complete helpdesk application.
+
 
 <p align="center">
-  <img width="200" height="200" alt="river-logo-icon-400" src="https://github.com/user-attachments/assets/7e686bf8-ea15-4da7-ae2f-fb09793736e8" />
+  <img width="100" height="100" alt="river-logo-icon-400" src="https://github.com/user-attachments/assets/7e686bf8-ea15-4da7-ae2f-fb09793736e8" />
 </p>
-
+<br><br>
 <p align="center">
   <img width="875" height="1880" alt="river-ticket-flow" src="https://github.com/user-attachments/assets/3d187a76-8535-4075-9deb-65f2d35448a0" />
 
@@ -12,13 +20,6 @@
 <p align="center">
   <strong>Status:</strong> In Development
 </p>
-
-## About
-
-River is a helpdesk ticket management system designed to organize technical support requests, track ticket progress, and provide a foundation for role-based support workflows.
-
-The project is being developed incrementally, starting with a secure REST API and expanding toward a complete helpdesk application.
-
 ## Technology Stack
 
 - **Node.js** — JavaScript runtime

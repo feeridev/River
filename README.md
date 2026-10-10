@@ -1,5 +1,29 @@
-<h3 align="center">River — Helpdesk Ticket Management System</h3>
+# River — Helpdesk Ticket Management System
 
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/7e686bf8-ea15-4da7-ae2f-fb09793736e8" alt="River logo" width="180" />
+</p>
+
+<p align="center">
+  <strong>A helpdesk backend for organizing technical support requests and managing ticket workflows.</strong>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Status-In%20Development-orange?style=for-the-badge" alt="In Development" />
+  <img src="https://img.shields.io/badge/Node.js-Runtime-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js" />
+  <img src="https://img.shields.io/badge/Express-5-000000?style=for-the-badge&logo=express&logoColor=white" alt="Express 5" />
+  <img src="https://img.shields.io/badge/TypeScript-Backend-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/MongoDB-Database-47A248?style=for-the-badge&logo=mongodb&logoColor=white" alt="MongoDB" />
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/JWT-Authentication-000000?style=flat-square&logo=jsonwebtokens&logoColor=white" alt="JWT" />
+  <img src="https://img.shields.io/badge/Zod-Validation-3E67B1?style=flat-square" alt="Zod" />
+  <img src="https://img.shields.io/badge/bcrypt-Password%20Hashing-5C6BC0?style=flat-square" alt="bcrypt" />
+  <img src="https://img.shields.io/badge/REST%20API-Backend-6C757D?style=flat-square" alt="REST API" />
+</p>
+
+---
 
 ## About
 
@@ -7,52 +31,17 @@ River is a helpdesk ticket management system designed to organize technical supp
 
 The project is being developed incrementally, starting with a secure REST API and expanding toward a complete helpdesk application.
 
+## Architecture & Workflow
 
 <p align="center">
-  <img width="100" height="100" alt="river-logo-icon-400" src="https://github.com/user-attachments/assets/7e686bf8-ea15-4da7-ae2f-fb09793736e8" />
-</p>
-<br><br>
-<p align="center">
-  <img width="875" height="1880" alt="river-ticket-flow" src="https://github.com/user-attachments/assets/3d187a76-8535-4075-9deb-65f2d35448a0" />
-
+  <img src="https://github.com/user-attachments/assets/3d187a76-8535-4075-9deb-65f2d35448a0" alt="River backend architecture and ticket workflow" width="700" />
 </p>
 
 <p align="center">
-  <strong>Status:</strong> In Development
-</p>
-## Technology Stack
-
-- **Node.js** — JavaScript runtime
-- **Express 5** — REST API
-- **TypeScript** — type-safe backend development
-- **MongoDB** — database
-- **JWT** — authentication
-- **bcrypt** — password hashing
-- **Zod** — request validation
-
-## Implemented Features
-
-- User registration and login
-- Password hashing with bcrypt
-- JWT-based authentication
-- Active-account verification
-- Role definitions for employees, agents, and administrators
-- Ticket creation with validated input
-- Ticket categories and priorities
-- Default ticket status and priority
-- MongoDB indexes for user lookup and ticket queries
-
-> River is a work in progress. Features such as ticket assignment, status management, and the frontend are planned for future development.
-
-## Ticket Creation Workflow
-
-When an authenticated employee submits a ticket, River validates the request, verifies the user's identity, and stores the ticket in MongoDB.
-
-<p align="center">
-  <img src="REPLACE_WITH_BACKEND_ALGORITHM_IMAGE_URL" alt="River ticket creation backend workflow" width="800">
+  <sub>Ticket creation workflow — from request validation to database storage.</sub>
 </p>
 
-The current ticket creation flow includes:
+### Current ticket creation flow
 
 1. Receive a ticket creation request.
 2. Authenticate the user using a JWT.
@@ -62,21 +51,51 @@ The current ticket creation flow includes:
 6. Save the ticket to MongoDB.
 7. Return a `201 Created` response.
 
+## Technology Stack
+
+| Technology | Purpose |
+|---|---|
+| Node.js | JavaScript runtime |
+| Express 5 | REST API and routing |
+| TypeScript | Type-safe backend development |
+| MongoDB | Database |
+| JWT | Authentication |
+| bcrypt | Password hashing |
+| Zod | Request validation |
+
+## Implemented Features
+
+- [x] User registration and login
+- [x] Password hashing with bcrypt
+- [x] JWT-based authentication
+- [x] Active-account verification
+- [x] Role definitions for employees, agents, and administrators
+- [x] Ticket creation with validated input
+- [x] Ticket categories and priorities
+- [x] Default ticket status and priority
+- [x] MongoDB indexes for user lookup and ticket queries
+
+> **Development note:** River is a work in progress. Ticket assignment, status management, and the frontend are planned but are not yet implemented.
+
 ## API Overview
 
-Base URL for local development: `http://localhost:5000`
+Base URL for local development:
+
+`http://localhost:5000`
 
 | Method | Endpoint | Description |
 |---|---|---|
-| GET | `/api/health` | Health check |
-| POST | `/api/auth/register` | Register an account |
-| POST | `/api/auth/login` | Log in |
-| GET | `/api/auth/me` | Get the authenticated identity |
-| POST | `/api/tickets` | Create a ticket |
+| `GET` | `/api/health` | Health check |
+| `POST` | `/api/auth/register` | Register an account |
+| `POST` | `/api/auth/login` | Log in |
+| `GET` | `/api/auth/me` | Get the authenticated identity |
+| `POST` | `/api/tickets` | Create a ticket |
 
 Protected endpoints require a valid bearer token:
 
-`Authorization: Bearer <your-token>`
+```http
+Authorization: Bearer <your-token>
+```
 
 ## Getting Started
 
@@ -107,7 +126,7 @@ Copy the example environment file:
 cp .env.example .env
 ```
 
-Edit `.env` and configure the values:
+Configure the values in `.env`:
 
 ```env
 PORT=5000
@@ -115,17 +134,17 @@ MONGODB_URI=mongodb://127.0.0.1:27017/river
 JWT_SECRET=replace_with_a_long_random_secret
 ```
 
-Generate a strong secret locally with:
+Generate a strong secret locally:
 
 ```bash
 openssl rand -hex 32
 ```
 
-Put the generated value in `JWT_SECRET`. Never commit your real `.env` file.
+Use the generated value for `JWT_SECRET`. Never commit your real `.env` file.
 
 ### 4. Start MongoDB
 
-Make sure your MongoDB service is running before starting the API.
+Ensure your MongoDB service is running before starting the API.
 
 On systems using systemd:
 
@@ -133,13 +152,15 @@ On systems using systemd:
 sudo systemctl start mongod
 ```
 
-### 5. Run the development server
+### 5. Start the development server
 
 ```bash
 npm run dev
 ```
 
-The API runs at `http://localhost:5000`.
+The API will run at:
+
+`http://localhost:5000`
 
 ### 6. Build for production
 
@@ -186,6 +207,8 @@ River/
 
 River is built step by step, with an emphasis on understanding the implementation, validating inputs, protecting user accounts, and keeping the codebase maintainable.
 
+The goal is to build a practical helpdesk system while documenting the engineering decisions and development process along the way.
+
 ## Author
 
 **Farshad Safarkhanloo**
@@ -194,4 +217,6 @@ River is built step by step, with an emphasis on understanding the implementatio
 
 ---
 
-*River is an independent portfolio project and is actively being developed.*
+<p align="center">
+  <sub>River is an independent portfolio project and is actively being developed.</sub>
+</p>

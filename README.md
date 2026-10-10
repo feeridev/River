@@ -1,11 +1,11 @@
 # River — Helpdesk Ticket Management System
 
 <p align="center">
-  <img width="400" height="400" alt="river-logo-icon-400" src="https://github.com/user-attachments/assets/7e686bf8-ea15-4da7-ae2f-fb09793736e8" />
+  <img width="200" height="200" alt="river-logo-icon-400" src="https://github.com/user-attachments/assets/7e686bf8-ea15-4da7-ae2f-fb09793736e8" />
 </p>
 
 <p align="center">
-  <img width="2240" height="3660" alt="river-ticket-flow" src="https://github.com/user-attachments/assets/3d187a76-8535-4075-9deb-65f2d35448a0" />
+  <img width="875" height="1880" alt="river-ticket-flow" src="https://github.com/user-attachments/assets/3d187a76-8535-4075-9deb-65f2d35448a0" />
 
 </p>
 

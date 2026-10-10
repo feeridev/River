@@ -1,7 +1,7 @@
 # River — Helpdesk Ticket Management System
 
 <p align="center">
-  <svg>![Uploading river-logo.svg…]()
+  <img width="400" height="400" alt="river-logo-icon-400" src="https://github.com/user-attachments/assets/7e686bf8-ea15-4da7-ae2f-fb09793736e8" />
 </p>
 
 <p align="center">

@@ -3,6 +3,14 @@ import { Router } from "express";
 import { ZodError } from "zod";
 
 import {
+  sendTicketMessage,
+  getTicketMessages,
+  TicketMessageError,
+} from "../services/ticketMessageService";
+
+import { createTicketMessageSchema } from "../validation/ticketMessageValidation";
+
+import {
   authenticateToken,
   type AuthenticatedRequest,
 } from "../middleware/authMiddleware";
@@ -187,6 +195,76 @@ router.post("/", authenticateToken, async (req, res) => {
     res.status(500).json({
       message: "An unexpected error occurred",
     });
+  }
+});
+// GET /api/tickets/:id/messages
+router.get("/:id/messages", authenticateToken, async (req, res) => {
+  try {
+    const authReq = req as AuthenticatedRequest;
+
+    if (!authReq.auth) {
+      res.status(401).json({ message: "Authentication required" });
+      return;
+    }
+
+    const messages = await getTicketMessages(
+      authReq.params.id as string,
+      authReq.auth.userId,
+    );
+
+    res.status(200).json({ messages, count: messages.length });
+  } catch (error) {
+    if (error instanceof TicketMessageError) {
+      res.status(error.statusCode).json({ message: error.message });
+      return;
+    }
+
+    console.error("Fetching ticket messages failed:", error);
+    res.status(500).json({ message: "An unexpected error occurred" });
+  }
+});
+
+// POST /api/tickets/:id/messages
+router.post("/:id/messages", authenticateToken, async (req, res) => {
+  try {
+    const authReq = req as AuthenticatedRequest;
+
+    if (!authReq.auth) {
+      res.status(401).json({ message: "Authentication required" });
+      return;
+    }
+
+    const input = createTicketMessageSchema.parse(authReq.body);
+
+    const message = await sendTicketMessage(
+      authReq.params.id as string,
+      authReq.auth.userId,
+      input.body,
+    );
+
+    res.status(201).json({
+      message: "Reply sent successfully",
+      ticketMessage: message,
+    });
+  } catch (error) {
+    if (error instanceof ZodError) {
+      res.status(400).json({
+        message: "Invalid message data",
+        errors: error.issues.map((issue) => ({
+          field: issue.path.join("."),
+          message: issue.message,
+        })),
+      });
+      return;
+    }
+
+    if (error instanceof TicketMessageError) {
+      res.status(error.statusCode).json({ message: error.message });
+      return;
+    }
+
+    console.error("Sending ticket message failed:", error);
+    res.status(500).json({ message: "An unexpected error occurred" });
   }
 });
 

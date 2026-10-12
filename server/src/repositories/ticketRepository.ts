@@ -132,3 +132,27 @@ export async function findTicketAccessibleToUser(
 
   return tickets.findOne(filter);
 }
+export async function updateTicketStatus(
+  ticketId: string,
+  status: Ticket["status"],
+) {
+  if (!ObjectId.isValid(ticketId)) {
+    return null;
+  }
+
+  const now = new Date();
+
+  return tickets.updateOne(
+    { _id: new ObjectId(ticketId) },
+    {
+      $set: {
+        status,
+        updatedAt: now,
+        resolvedAt:
+          status === "RESOLVED" || status === "CLOSED"
+            ? now
+            : null,
+      },
+    },
+  );
+}

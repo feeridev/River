@@ -15,6 +15,7 @@ import {
   findTicketAccessibleToUser,
   findTicketsAccessibleToUser,
   updateTicketById,
+  updateTicketStatus,
 } from "../repositories/ticketRepository";
 
 import { findUserById } from "../repositories/userRepository";
@@ -278,4 +279,35 @@ export async function assignTicketForAdmin(
     assignedTo: agentId,
     updatedAt: new Date(),
   };
+}
+export async function changeTicketStatus(
+  ticketId: string,
+  userId: string,
+  role: UserRole,
+  status: Ticket["status"],
+) {
+  if (role !== "AGENT" && role !== "ADMIN") {
+    throw new TicketError(
+      "Only agents and admins can change ticket status",
+      403,
+    );
+  }
+
+  const ticket = await findTicketAccessibleToUser(
+    ticketId,
+    userId,
+    role,
+  );
+
+  if (!ticket) {
+    throw new TicketError("Ticket not found", 404);
+  }
+
+  const result = await updateTicketStatus(ticketId, status);
+
+  if (!result || result.matchedCount === 0) {
+    throw new TicketError("Ticket could not be updated", 409);
+  }
+
+  return getTicketForUser(ticketId, userId, role);
 }

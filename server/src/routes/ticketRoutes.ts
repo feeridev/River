@@ -1,7 +1,7 @@
 
 import { Router } from "express";
 import { ZodError } from "zod";
-
+import { updateTicketStatusSchema } from "../validation/ticketStatusValidation";
 import { requireRole } from "../middleware/roleMiddleware";
 import {
   authenticateToken,
@@ -15,6 +15,7 @@ import {
   getTicketsForUser,
   updateTicketForUser,
   TicketError,
+  changeTicketStatus,
 } from "../services/ticketService";
 
 import {
@@ -91,7 +92,50 @@ router.get("/", authenticateToken, async (req, res) => {
     res.status(500).json({ message: "An unexpected error occurred" });
   }
 });
+// PATCH /api/tickets/:id/status
+// Agents can update tickets they created or are assigned to; admins can update any ticket.
+router.patch(
+  "/:id/status",
+  authenticateToken,
+  requireRole("AGENT", "ADMIN"),
+  async (req, res) => {
+    try {
+      const authReq = req as AuthenticatedRequest;
+      const input = updateTicketStatusSchema.parse(authReq.body);
 
+      const ticket = await changeTicketStatus(
+        authReq.params.id as string,
+        authReq.auth!.userId,
+        authReq.auth!.role,
+        input.status,
+      );
+
+      res.status(200).json({
+        message: "Ticket status updated successfully",
+        ticket,
+      });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        res.status(400).json({
+          message: "Invalid ticket status",
+          errors: error.issues.map((issue) => ({
+            field: issue.path.join("."),
+            message: issue.message,
+          })),
+        });
+        return;
+      }
+
+      if (error instanceof TicketError) {
+        res.status(error.statusCode).json({ message: error.message });
+        return;
+      }
+
+      console.error("Ticket status update failed:", error);
+      res.status(500).json({ message: "An unexpected error occurred" });
+    }
+  },
+);
 // PATCH /api/tickets/:id
 // Updates a ticket according to the service's existing edit permissions.
 router.patch("/:id", authenticateToken, async (req, res) => {

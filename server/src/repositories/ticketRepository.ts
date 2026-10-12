@@ -35,3 +35,25 @@ export async function ensureTicketIndexes() {
   await tickets.createIndex({ assignedTo: 1, status: 1 });
   await tickets.createIndex({ status: 1, priority: 1 });
 }
+
+export async function updateTicketById(
+  id: string,
+  userId: string,
+  updates: Partial<
+    Pick<Ticket, "title" | "description" | "category" | "priority">
+  >,
+) {
+  return tickets.updateOne(
+    {
+      _id: new ObjectId(id),
+      createdBy: new ObjectId(userId),
+      status: "OPEN",
+    },
+    {
+      $set: {
+        ...updates,
+        updatedAt: new Date(),
+      },
+    },
+  );
+}

@@ -1,11 +1,15 @@
+
 import { ObjectId } from "mongodb";
 
 import type { TicketMessage } from "../models/TicketMessage";
+import type { UserRole } from "../models/User";
+
 import {
   createTicketMessage,
   findMessagesByTicket,
 } from "../repositories/ticketMessageRepository";
-import { findTicketById } from "../repositories/ticketRepository";
+
+import { findTicketAccessibleToUser } from "../repositories/ticketRepository";
 
 export class TicketMessageError extends Error {
   constructor(
@@ -17,7 +21,11 @@ export class TicketMessageError extends Error {
   }
 }
 
-async function verifyTicketAccess(ticketId: string, userId: string) {
+async function verifyTicketAccess(
+  ticketId: string,
+  userId: string,
+  role: UserRole,
+) {
   if (!ObjectId.isValid(userId)) {
     throw new TicketMessageError("Invalid user ID", 401);
   }
@@ -26,9 +34,13 @@ async function verifyTicketAccess(ticketId: string, userId: string) {
     throw new TicketMessageError("Ticket not found", 404);
   }
 
-  const ticket = await findTicketById(ticketId);
+  const ticket = await findTicketAccessibleToUser(
+    ticketId,
+    userId,
+    role,
+  );
 
-  if (!ticket || ticket.createdBy.toString() !== userId) {
+  if (!ticket) {
     throw new TicketMessageError("Ticket not found", 404);
   }
 
@@ -38,14 +50,21 @@ async function verifyTicketAccess(ticketId: string, userId: string) {
 export async function sendTicketMessage(
   ticketId: string,
   userId: string,
+  role: UserRole,
   body: string,
 ) {
-  await verifyTicketAccess(ticketId, userId);
+  await verifyTicketAccess(ticketId, userId, role);
+
+  const trimmedBody = body.trim();
+
+  if (!trimmedBody) {
+    throw new TicketMessageError("Message cannot be empty", 400);
+  }
 
   const message: TicketMessage = {
     ticketId: new ObjectId(ticketId),
     senderId: new ObjectId(userId),
-    body: body.trim(),
+    body: trimmedBody,
     createdAt: new Date(),
   };
 
@@ -63,8 +82,9 @@ export async function sendTicketMessage(
 export async function getTicketMessages(
   ticketId: string,
   userId: string,
+  role: UserRole,
 ) {
-  await verifyTicketAccess(ticketId, userId);
+  await verifyTicketAccess(ticketId, userId, role);
 
   const messages = await findMessagesByTicket(ticketId);
 

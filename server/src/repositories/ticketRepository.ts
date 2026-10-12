@@ -56,4 +56,79 @@ export async function updateTicketById(
       },
     },
   );
+}export async function assignTicketToAgent(
+  ticketId: string,
+  agentId: string,
+) {
+  if (!ObjectId.isValid(ticketId) || !ObjectId.isValid(agentId)) {
+    return null;
+  }
+
+  return tickets.updateOne(
+    { _id: new ObjectId(ticketId) },
+    {
+      $set: {
+        assignedTo: new ObjectId(agentId),
+        updatedAt: new Date(),
+      },
+    },
+  );
+}
+
+export async function findTicketsAccessibleToUser(
+  userId: string,
+  role: "EMPLOYEE" | "AGENT" | "ADMIN",
+) {
+  if (!ObjectId.isValid(userId)) {
+    return [];
+  }
+
+  const userObjectId = new ObjectId(userId);
+
+  const filter =
+    role === "ADMIN"
+      ? {}
+      : role === "AGENT"
+        ? {
+            $or: [
+              { createdBy: userObjectId },
+              { assignedTo: userObjectId },
+            ],
+          }
+        : { createdBy: userObjectId };
+
+  return tickets
+    .find(filter)
+    .sort({ createdAt: -1 })
+    .toArray();
+}
+
+export async function findTicketAccessibleToUser(
+  ticketId: string,
+  userId: string,
+  role: "EMPLOYEE" | "AGENT" | "ADMIN",
+) {
+  if (!ObjectId.isValid(ticketId) || !ObjectId.isValid(userId)) {
+    return null;
+  }
+
+  const userObjectId = new ObjectId(userId);
+
+  const filter =
+    role === "ADMIN"
+      ? { _id: new ObjectId(ticketId) }
+      : role === "AGENT"
+        ? {
+            _id: new ObjectId(ticketId),
+            $or: [
+              { createdBy: userObjectId },
+              { assignedTo: userObjectId },
+            ],
+          }
+        : {
+            _id: new ObjectId(ticketId),
+            createdBy: userObjectId,
+          };
+
+  return tickets.findOne(filter);
 }

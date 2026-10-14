@@ -10,6 +10,7 @@ import {
 } from "../repositories/ticketMessageRepository";
 
 import { findTicketAccessibleToUser } from "../repositories/ticketRepository";
+import { findUserById } from "../repositories/userRepository";
 
 export class TicketMessageError extends Error {
   constructor(
@@ -53,7 +54,18 @@ export async function sendTicketMessage(
   role: UserRole,
   body: string,
 ) {
-  await verifyTicketAccess(ticketId, userId, role);
+    const ticket = await verifyTicketAccess(
+    ticketId,
+    userId,
+    role,
+  );
+
+  if (ticket.status === "CLOSED") {
+    throw new TicketMessageError(
+      "This ticket is closed. Reopen it before sending a reply.",
+      409,
+    );
+  }
 
   const trimmedBody = body.trim();
 
@@ -79,6 +91,7 @@ export async function sendTicketMessage(
   };
 }
 
+
 export async function getTicketMessages(
   ticketId: string,
   userId: string,
@@ -88,11 +101,20 @@ export async function getTicketMessages(
 
   const messages = await findMessagesByTicket(ticketId);
 
-  return messages.map((message) => ({
-    id: message._id!.toString(),
-    ticketId: message.ticketId.toString(),
-    senderId: message.senderId.toString(),
-    body: message.body,
-    createdAt: message.createdAt,
-  }));
+  return Promise.all(
+    messages.map(async (message) => {
+      const senderId = message.senderId.toString();
+      const sender = await findUserById(senderId);
+
+      return {
+        id: message._id!.toString(),
+        ticketId: message.ticketId.toString(),
+        senderId,
+        senderName: sender?.name ?? "Unknown user",
+        senderRole: sender?.role ?? "UNKNOWN",
+        body: message.body,
+        createdAt: message.createdAt,
+      };
+    }),
+  );
 }

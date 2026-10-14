@@ -134,6 +134,7 @@ export async function findTicketAccessibleToUser(
 }
 export async function updateTicketStatus(
   ticketId: string,
+  currentStatus: Ticket["status"],
   status: Ticket["status"],
 ) {
   if (!ObjectId.isValid(ticketId)) {
@@ -142,17 +143,26 @@ export async function updateTicketStatus(
 
   const now = new Date();
 
+  const update: {
+    status: Ticket["status"];
+    updatedAt: Date;
+    resolvedAt?: Date | null;
+  } = {
+    status,
+    updatedAt: now,
+  };
+
+  if (status === "RESOLVED") {
+    update.resolvedAt = now;
+  } else if (status === "OPEN" || status === "IN_PROGRESS") {
+    update.resolvedAt = null;
+  }
+
   return tickets.updateOne(
-    { _id: new ObjectId(ticketId) },
     {
-      $set: {
-        status,
-        updatedAt: now,
-        resolvedAt:
-          status === "RESOLVED" || status === "CLOSED"
-            ? now
-            : null,
-      },
+      _id: new ObjectId(ticketId),
+      status: currentStatus,
     },
+    { $set: update },
   );
 }

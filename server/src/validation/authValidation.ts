@@ -14,3 +14,10 @@ export const loginSchema = z.object({
   ),
   password: z.string().min(1).max(72),
 });
+export const initialAdminSchema = z.object({
+  name: z.string().trim().min(2).max(80),
+  email: z.string().trim().email().max(254).transform((value) =>
+    value.toLowerCase()
+  ),
+  password: z.string().min(12).max(72),
+});

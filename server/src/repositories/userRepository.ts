@@ -43,3 +43,63 @@ export async function findUserById(id: string) {
     { projection: { passwordHash: 0 } },
   );
 }
+export async function hasAnyAdmin() {
+  return (
+    (await users.findOne(
+      { role: "ADMIN" },
+      { projection: { _id: 1 } },
+    )) !== null
+  );
+}
+
+export async function updateUserRole(
+  id: string,
+  role: "EMPLOYEE" | "AGENT",
+) {
+  if (!ObjectId.isValid(id)) {
+    return false;
+  }
+
+  const result = await users.updateOne(
+    {
+      _id: new ObjectId(id),
+      role: { $in: ["EMPLOYEE", "AGENT"] },
+    },
+    {
+      $set: {
+        role,
+        updatedAt: new Date(),
+      },
+    },
+  );
+
+  return result.modifiedCount === 1;
+}
+
+export async function updateUserActiveStatus(
+  id: string,
+  isActive: boolean,
+) {
+  if (!ObjectId.isValid(id)) {
+    return false;
+  }
+
+  const result = await users.updateOne(
+    { _id: new ObjectId(id) },
+    {
+      $set: {
+        isActive,
+        updatedAt: new Date(),
+      },
+    },
+  );
+
+  return result.modifiedCount === 1;
+}
+
+export async function countActiveAdmins() {
+  return users.countDocuments({
+    role: "ADMIN",
+    isActive: true,
+  });
+}

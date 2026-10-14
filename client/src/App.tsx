@@ -1,6 +1,8 @@
+
 import { useCallback, useEffect, useState } from "react";
 import Login from "./Login";
 import Dashboard from "./Dashboard";
+import Setup from "./Setup";
 
 type User = {
   id: string;
@@ -14,6 +16,8 @@ type LoginResponse = {
   token: string;
   user: User;
 };
+
+type SetupStatus = "checking" | "required" | "complete" | "error";
 
 const TOKEN_KEY = "river_token";
 const USER_KEY = "river_user";
@@ -33,6 +37,8 @@ export default function App() {
   );
   const [user, setUser] = useState<User | null>(readStoredUser);
   const [checkingSession, setCheckingSession] = useState(true);
+  const [setupStatus, setSetupStatus] = useState<SetupStatus>("checking");
+  const [setupRetry, setSetupRetry] = useState(0);
 
   const logout = useCallback(() => {
     localStorage.removeItem(TOKEN_KEY);
@@ -66,18 +72,53 @@ export default function App() {
           }
         }
       } catch {
-        // Keep the session while the API is temporarily unreachable.
-        // The next API request will report any connection problem.
+        // Preserve the current session if the API is temporarily unavailable.
       } finally {
         if (!cancelled) setCheckingSession(false);
       }
     }
 
     void checkSession();
+
     return () => {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function checkSetup() {
+      setSetupStatus("checking");
+
+      try {
+        const response = await fetch("/api/auth/setup-status");
+        if (!response.ok) {
+          throw new Error("Could not check River setup status.");
+        }
+
+        const result = (await response.json()) as {
+          setupRequired?: boolean;
+        };
+
+        if (typeof result.setupRequired !== "boolean") {
+          throw new Error("Unexpected setup status response.");
+        }
+
+        if (!cancelled) {
+          setSetupStatus(result.setupRequired ? "required" : "complete");
+        }
+      } catch {
+        if (!cancelled) setSetupStatus("error");
+      }
+    }
+
+    void checkSetup();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [setupRetry]);
 
   async function handleLogin(email: string, password: string) {
     let response: Response;
@@ -126,21 +167,53 @@ export default function App() {
     );
   }
 
-  if (!token || !user) {
-    return <Login onLogin={handleLogin} />;
+  if (token && user) {
+    return (
+      <div className="authenticated-app">
+        <Dashboard />
+        <button
+          type="button"
+          className="session-logout"
+          onClick={logout}
+          title="Sign out of River"
+        >
+          Sign out
+        </button>
+      </div>
+    );
   }
 
-  return (
-    <div className="authenticated-app">
-      <Dashboard />
-      <button
-        type="button"
-        className="session-logout"
-        onClick={logout}
-        title="Sign out of River"
-      >
-        Sign out
-      </button>
-    </div>
-  );
+  if (setupStatus === "checking") {
+    return (
+      <div className="app-loading">
+        <span className="app-loading-mark">〰</span>
+        <span>Checking River setup...</span>
+      </div>
+    );
+  }
+
+  if (setupStatus === "error") {
+    return (
+      <main className="setup-unavailable">
+        <h1>River couldn't check its setup status.</h1>
+        <p>
+          Check that the River API is running and try again. No account has
+          been created by this check.
+        </p>
+        <button
+          type="button"
+          className="login-submit"
+          onClick={() => setSetupRetry((value) => value + 1)}
+        >
+          Retry
+        </button>
+      </main>
+    );
+  }
+
+  if (setupStatus === "required") {
+    return <Setup onComplete={() => setSetupStatus("complete")} />;
+  }
+
+  return <Login onLogin={handleLogin} />;
 }

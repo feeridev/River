@@ -1,0 +1,14 @@
+
+.setup-unavailable {
+  width: min(520px, calc(100% - 40px));
+  margin: 12vh auto;
+}
+
+.setup-unavailable p {
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.setup-unavailable .login-submit {
+  width: 100%;
+}

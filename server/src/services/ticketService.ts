@@ -303,10 +303,34 @@ export async function changeTicketStatus(
     throw new TicketError("Ticket not found", 404);
   }
 
-  const result = await updateTicketStatus(ticketId, status);
+  const allowedTransitions: Record<
+    Ticket["status"],
+    Ticket["status"][]
+  > = {
+    OPEN: ["IN_PROGRESS", "RESOLVED", "CLOSED"],
+    IN_PROGRESS: ["OPEN", "RESOLVED", "CLOSED"],
+    RESOLVED: ["OPEN", "IN_PROGRESS", "CLOSED"],
+    CLOSED: ["OPEN"],
+  };
+
+  if (!allowedTransitions[ticket.status].includes(status)) {
+    throw new TicketError(
+      `Cannot change status from ${ticket.status} to ${status}`,
+      409,
+    );
+  }
+
+  const result = await updateTicketStatus(
+    ticketId,
+    ticket.status,
+    status,
+  );
 
   if (!result || result.matchedCount === 0) {
-    throw new TicketError("Ticket could not be updated", 409);
+    throw new TicketError(
+      "Ticket changed or could not be updated. Please refresh and try again.",
+      409,
+    );
   }
 
   return getTicketForUser(ticketId, userId, role);

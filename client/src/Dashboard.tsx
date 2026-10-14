@@ -6,6 +6,7 @@ import {
   Users, Waves, X, MessageCircle, Send, CalendarDays, Tag,
 } from "lucide-react";
 import "./App.css";
+import UserManagement from "./UserManagement";
 
 type TicketStatus = "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED";
 type TicketPriority = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
@@ -17,7 +18,15 @@ type Ticket = {
 };
 type TicketForm = { title: string; description: string; category: TicketCategory; priority: TicketPriority };
 type StoredUser = { id?: string; name?: string; fullName?: string; username?: string; email?: string; role?: string };
-type TicketMessage = { id: string; ticketId: string; senderId: string; body: string; createdAt: string };
+type TicketMessage = {
+  id: string;
+  ticketId: string;
+  senderId: string;
+  senderName: string;
+  senderRole: string;
+  body: string;
+  createdAt: string;
+};
 
 const TOKEN_KEY = "river_token";
 const USER_KEY = "river_user";
@@ -26,6 +35,14 @@ const categoryLabels: Record<TicketCategory, string> = {
 };
 const priorityLabels: Record<TicketPriority, string> = { LOW: "Low", MEDIUM: "Medium", HIGH: "High", CRITICAL: "Critical" };
 const statusLabels: Record<TicketStatus, string> = { OPEN: "Open", IN_PROGRESS: "In progress", RESOLVED: "Resolved", CLOSED: "Closed" };
+
+const allowedStatusTransitions: Record<TicketStatus, TicketStatus[]> = {
+  OPEN: ["IN_PROGRESS", "RESOLVED", "CLOSED"],
+  IN_PROGRESS: ["OPEN", "RESOLVED", "CLOSED"],
+  RESOLVED: ["OPEN", "IN_PROGRESS", "CLOSED"],
+  CLOSED: ["OPEN"],
+};
+
 const emptyForm: TicketForm = { title: "", description: "", category: "SOFTWARE", priority: "MEDIUM" };
 
 function getStoredUser(): StoredUser | null {
@@ -72,6 +89,7 @@ export default function Dashboard() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState("");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [activeView, setActiveView] = useState<"overview" | "users">("overview");
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [ticketMessages, setTicketMessages] = useState<TicketMessage[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -79,9 +97,15 @@ export default function Dashboard() {
   const [replyBody, setReplyBody] = useState("");
   const [replyError, setReplyError] = useState("");
   const [replySubmitting, setReplySubmitting] = useState(false);
+  const [statusSubmitting, setStatusSubmitting] = useState(false);
+  const [statusError, setStatusError] = useState("");
   const token = localStorage.getItem(TOKEN_KEY);
   const userName = getUserName();
-  const currentUserId = getStoredUser()?.id;
+  const currentUser = getStoredUser();
+  const currentUserId = currentUser?.id;
+  const isAdmin = currentUser?.role === "ADMIN";
+  const canManageStatus =
+  currentUser?.role === "AGENT" || currentUser?.role === "ADMIN";
 
   async function loadTickets(showLoading = true) {
     if (!token) { setLoadError("Your session is missing. Please sign in again."); setLoading(false); return; }
@@ -190,6 +214,51 @@ export default function Dashboard() {
     }
   }
 
+  async function updateStatus(status: TicketStatus) {
+  if (!selectedTicket || !token || statusSubmitting) return;
+
+  setStatusSubmitting(true);
+  setStatusError("");
+  setSuccess("");
+
+  try {
+    const response = await fetch(
+      `/api/tickets/${encodeURIComponent(selectedTicket.id)}/status`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status }),
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(await errorMessage(response));
+    }
+
+    const payload = await response.json();
+    const updatedTicket = (payload.ticket || payload) as Ticket;
+
+    setSelectedTicket(updatedTicket);
+    setTickets((current) =>
+      current.map((ticket) =>
+        ticket.id === updatedTicket.id ? updatedTicket : ticket,
+      ),
+    );
+
+    await loadTickets(false);
+    setSuccess("Ticket status updated successfully.");
+  } catch (error) {
+    setStatusError(
+      error instanceof Error ? error.message : "Could not update ticket status.",
+    );
+  } finally {
+    setStatusSubmitting(false);
+  }
+}
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return tickets.filter((ticket) => {
@@ -212,7 +281,7 @@ export default function Dashboard() {
   async function submitTicket(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setFormError(""); setSuccess("");
     const title = form.title.trim(); const description = form.description.trim();
-    if (title.length < 4) { setFormError("Use a title with at least 4 characters."); return; }
+    if (title.length < 5) { setFormError("Use a title with at least 5 characters."); return; }
     if (description.length < 10) { setFormError("Add a description with at least 10 characters."); return; }
     if (!token) { setFormError("Your session has expired. Please sign in again."); return; }
     setSubmitting(true);
@@ -237,10 +306,14 @@ export default function Dashboard() {
       <a className="river-brand" href="#dashboard" onClick={() => setMobileNavOpen(false)}><span className="river-brand-mark"><Waves size={23} /></span><span className="river-brand-copy"><strong>river</strong><small>HELPDESK</small></span></a>
       <div className="river-section-label">WORKSPACE</div>
       <nav className="river-nav" aria-label="Workspace navigation">
-        <a className="river-nav-item active" href="#dashboard" onClick={() => setMobileNavOpen(false)}><LayoutDashboard size={18} /><span>Overview</span><i /></a>
-        <a className="river-nav-item" href="#tickets" onClick={() => setMobileNavOpen(false)}><TicketIcon size={18} /><span>All tickets</span><b>{tickets.length}</b></a>
-        <a className="river-nav-item" href="#activity" onClick={() => setMobileNavOpen(false)}><Activity size={18} /><span>Activity</span></a>
-        <a className="river-nav-item" href="#team" onClick={() => setMobileNavOpen(false)}><Users size={18} /><span>Team</span></a>
+        <a className={`river-nav-item ${activeView === "overview" ? "active" : ""}`} href="#dashboard" onClick={() => { setActiveView("overview"); setMobileNavOpen(false); }}><LayoutDashboard size={18} /><span>Overview</span><i /></a>
+        <a className={`river-nav-item ${activeView === "overview" ? "" : ""}`} href="#tickets" onClick={() => { setActiveView("overview"); setMobileNavOpen(false); }}><TicketIcon size={18} /><span>All tickets</span><b>{tickets.length}</b></a>
+        <a className="river-nav-item" href="#activity" onClick={() => { setActiveView("overview"); setMobileNavOpen(false); }}><Activity size={18} /><span>Activity</span></a>
+        {isAdmin ? (
+          <a className={`river-nav-item ${activeView === "users" ? "active" : ""}`} href="#users" onClick={(event) => { event.preventDefault(); setActiveView("users"); setMobileNavOpen(false); }}><Users size={18} /><span>User management</span><i /></a>
+        ) : (
+          <a className="river-nav-item" href="#team" onClick={() => { setActiveView("overview"); setMobileNavOpen(false); }}><Users size={18} /><span>Team</span></a>
+        )}
       </nav>
       <div className="river-section-label river-support-label">SUPPORT</div>
       <nav className="river-nav" aria-label="Support navigation"><a className="river-nav-item" href="#help"><LifeBuoy size={18} /><span>Help center</span></a><a className="river-nav-item" href="#settings"><Settings size={18} /><span>Settings</span></a></nav>
@@ -248,9 +321,10 @@ export default function Dashboard() {
     </aside>
 
     <main className="river-main" id="dashboard">
-      <header className="river-topbar"><div className="river-topbar-left"><button className="river-icon-button river-mobile-menu" aria-label="Open navigation" onClick={() => setMobileNavOpen(true)}><Menu size={20} /></button><div className="river-breadcrumb"><span>Workspace</span><span>/</span><strong>Overview</strong></div></div><div className="river-topbar-actions"><label className="river-search"><Search size={16} /><input aria-label="Search tickets" placeholder="Search tickets..." value={search} onChange={(e) => setSearch(e.target.value)} /><kbd>/</kbd></label><button className="river-icon-button river-notification" aria-label="Notifications"><Bell size={18} /><i /></button><span className="river-topbar-divider" /><span className="river-topbar-user"><span className="river-avatar small">{initials(userName)}</span><strong>{userName}</strong><ChevronDown size={15} /></span></div></header>
+      <header className="river-topbar"><div className="river-topbar-left"><button className="river-icon-button river-mobile-menu" aria-label="Open navigation" onClick={() => setMobileNavOpen(true)}><Menu size={20} /></button><div className="river-breadcrumb"><span>Workspace</span><span>/</span><strong>{activeView === "users" && isAdmin ? "User management" : "Overview"}</strong></div></div><div className="river-topbar-actions"><label className="river-search"><Search size={16} /><input aria-label="Search tickets" placeholder="Search tickets..." value={search} onChange={(e) => setSearch(e.target.value)} /><kbd>/</kbd></label><button className="river-icon-button river-notification" aria-label="Notifications"><Bell size={18} /><i /></button><span className="river-topbar-divider" /><span className="river-topbar-user"><span className="river-avatar small">{initials(userName)}</span><strong>{userName}</strong><ChevronDown size={15} /></span></div></header>
 
       <div className="river-page-content">
+        {activeView === "users" && isAdmin ? <UserManagement /> : <>
         <section className="river-welcome-row"><div><div className="river-eyebrow"><i /> YOUR SUPPORT OVERVIEW</div><h1>Good to see you, {userName.split(" ")[0]} <span>✦</span></h1><p>Here's what's happening with your support tickets today.</p></div><button className="river-primary-button" onClick={openCreate}><Plus size={18} /> Create ticket</button></section>
         {success && <div className="river-success" role="status"><CheckCircle2 size={17} />{success}<button aria-label="Dismiss" onClick={() => setSuccess("")}><X size={16} /></button></div>}
 
@@ -277,6 +351,7 @@ export default function Dashboard() {
           </aside>
         </section>
         <footer className="river-footer"><span>© {new Date().getFullYear()} River Helpdesk</span><span><i /> All systems operational</span><a href="#help"><CircleHelp size={13} /> Need help?</a></footer>
+        </>}
       </div>
     </main>
 
@@ -320,6 +395,42 @@ export default function Dashboard() {
               <span><CalendarDays size={14} />{dateLabel(selectedTicket.createdAt)}</span>
             </div>
 
+{canManageStatus && (
+  <section className="river-detail-description">
+    <h4>Manage status</h4>
+
+    {statusError && (
+      <div className="river-form-error" role="alert">
+        <AlertCircle size={16} />
+        {statusError}
+      </div>
+    )}
+
+    <label className="river-form-field">
+      <span>Update ticket status</span>
+      <select
+        value={selectedTicket.status}
+        disabled={statusSubmitting}
+        onChange={(event) =>
+          void updateStatus(event.target.value as TicketStatus)
+        }
+      >
+        <option value={selectedTicket.status}>
+          {statusLabels[selectedTicket.status]}
+        </option>
+
+        {allowedStatusTransitions[selectedTicket.status].map((status) => (
+          <option key={status} value={status}>
+            {statusLabels[status]}
+          </option>
+        ))}
+      </select>
+    </label>
+
+    {statusSubmitting && <p>Updating status...</p>}
+  </section>
+)}
+
             <section className="river-detail-description">
               <h4>Description</h4>
               <p>{selectedTicket.description || "No description provided."}</p>
@@ -331,15 +442,24 @@ export default function Dashboard() {
                 <span>{ticketMessages.length}</span>
               </div>
 
-              {ticketMessages.length === 0
-                ? <div className="river-conversation-empty"><MessageCircle size={22} /><p>No replies yet. Send a message to start the conversation.</p></div>
-                : <div className="river-message-list">{ticketMessages.map((message) => {
-                    const mine = Boolean(currentUserId && message.senderId === currentUserId);
-                    return <article className={`river-message ${mine ? "mine" : ""}`} key={message.id}>
-                      <div className="river-message-top"><strong>{mine ? "You" : "Support / participant"}</strong><time>{new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(message.createdAt))}</time></div>
-                      <p>{message.body}</p>
-                    </article>;
-                  })}</div>}
+
+{ticketMessages.length === 0
+  ? <div className="river-conversation-empty"><MessageCircle size={22} /><p>No replies yet. Send a message to start the conversation.</p></div>
+  : <div className="river-message-list">{ticketMessages.map((message) => {
+      const mine = Boolean(currentUserId && message.senderId === currentUserId);
+      const role = message.senderRole || "PARTICIPANT";
+      const sender = mine ? "You" : (message.senderName || "Unknown user");
+
+      return <article className={`river-message ${mine ? "mine" : ""}`} key={message.id}>
+        <div className="river-message-top">
+          <strong>{sender}</strong>
+          <time>{new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(message.createdAt))}</time>
+        </div>
+        <div className="river-message-meta">{role}</div>
+        <p>{message.body}</p>
+      </article>;
+    })}</div>}
+
 
               <form className="river-reply-form" onSubmit={submitReply}>
                 <label htmlFor="river-reply-body">Your reply</label>

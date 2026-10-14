@@ -39,16 +39,8 @@ River is being developed incrementally, with an emphasis on authentication, acce
   <img
     src="https://github.com/user-attachments/assets/01542489-0197-439b-b1d7-040d696ff17d"
     alt="River helpdesk dashboard"
-    width="600"
-    height="350"
+    width="700"
   />
-  <img
-    src="https://github.com/user-attachments/assets/36866168-5d94-486f-b711-078ae6c3f33d"
-    alt="River initial setup screen"
-    width="600"
-    height="350"
-  />
-</p>
 
 
 ## Features

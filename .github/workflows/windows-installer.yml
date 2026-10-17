@@ -1,0 +1,188 @@
+name: Build River Windows Installer
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/windows-installer
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            client/package-lock.json
+            server/package-lock.json
+
+      - name: Build frontend
+        working-directory: client
+        run: |
+          npm ci
+          npm run build
+
+      - name: Build backend
+        working-directory: server
+        run: |
+          npm ci
+          npm run build
+
+      - name: Assemble installer files
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $root = $env:GITHUB_WORKSPACE
+          $stage = Join-Path $env:RUNNER_TEMP "RiverInstaller"
+          $installer = Join-Path $stage "installer"
+          $payload = Join-Path $installer "payload"
+          $server = Join-Path $payload "server"
+
+          Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force -Path `
+            "$server\dist", "$server\public", "$installer\output" |
+            Out-Null
+
+          Copy-Item "$root\server\dist\*" "$server\dist" -Recurse -Force
+          Copy-Item "$root\client\dist\*" "$server\public" -Recurse -Force
+
+          Push-Location "$root\server"
+          try {
+            npm ci --omit=dev
+            if ($LASTEXITCODE -ne 0) {
+              throw "Production dependency installation failed."
+            }
+          } finally {
+            Pop-Location
+          }
+
+          Copy-Item "$root\server\node_modules" "$server\node_modules" -Recurse
+          Copy-Item "$root\server\package.json" "$server\package.json"
+          Copy-Item (Get-Command node).Source "$server\node.exe"
+
+          # Verify production dependencies load from the staged payload.
+          Push-Location $server
+          try {
+            & "$server\node.exe" -e "const p = require('./package.json'); for (const name of Object.keys(p.dependencies ?? {})) require(name);"
+            if ($LASTEXITCODE -ne 0) {
+              throw "Bundled production dependency smoke test failed."
+            }
+          } finally {
+            Pop-Location
+          }
+
+          Copy-Item "$root\LICENSE" "$payload\LICENSE"
+          Copy-Item "$root\README.md" "$payload\README.md"
+
+          # Bundle the official MongoDB Community Server MSI.
+          $mongoVersion = "8.0.19"
+          $mongoName = "mongodb-windows-x86_64-$mongoVersion-signed.msi"
+          $mongoUrl = "https://fastdl.mongodb.org/windows/$mongoName"
+          $mongoFile = Join-Path $installer "mongodb-windows-x64.msi"
+          $hashFile = "$mongoFile.sha256"
+
+          Invoke-WebRequest -Uri $mongoUrl -OutFile $mongoFile
+          Invoke-WebRequest -Uri "$mongoUrl.sha256" -OutFile $hashFile
+
+          $expectedHash = ((Get-Content $hashFile -Raw).Trim() -split '\s+')[0]
+          $actualHash = (Get-FileHash $mongoFile -Algorithm SHA256).Hash
+
+          if ($actualHash -ne $expectedHash) {
+            throw "MongoDB MSI SHA256 verification failed."
+          }
+
+          Remove-Item $hashFile
+
+          # Bundle the pinned WinSW Windows service wrapper.
+          $winSwUrl = "https://github.com/winsw/winsw/releases/download/v2.12.0/WinSW-x64.exe"
+          Invoke-WebRequest -Uri $winSwUrl `
+            -OutFile (Join-Path $payload "RiverService.exe")
+
+          # Stage the installer definition and its templates.
+          Copy-Item "$root\installer\River.iss" $installer
+          Copy-Item "$root\installer\Install-River.ps1" $installer
+          Copy-Item "$root\installer\mongod.cfg.template" $installer
+          Copy-Item "$root\installer\RiverService.xml.template" $installer
+
+          # Never package development configuration or database files.
+          $forbidden = Get-ChildItem $payload -Force -Recurse |
+            Where-Object {
+              $_.Name -eq ".env" -or
+              $_.Name -eq "localdrop.db" -or
+              $_.FullName -match '[\\/]data[\\/]'
+            }
+
+          if ($forbidden) {
+            throw "Unexpected environment or database file in production payload."
+          }
+
+          if (-not (Test-Path "$server\public\index.html")) {
+            throw "Frontend build is missing."
+          }
+
+          if (-not (Test-Path "$server\dist\server.js")) {
+            throw "Backend build is missing."
+          }
+
+          if (-not (Test-Path "$server\node.exe")) {
+            throw "Bundled Node.js executable is missing."
+          }
+
+          Write-Output "Clean installer payload assembled."
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          choco install innosetup --no-progress -y
+          if ($LASTEXITCODE -ne 0) {
+            throw "Inno Setup installation failed."
+          }
+
+      - name: Compile River-Setup.exe
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $installer = Join-Path $env:RUNNER_TEMP "RiverInstaller\installer"
+          $compiler = Join-Path ${env:ProgramFiles(x86)} "Inno Setup 6\ISCC.exe"
+
+          if (-not (Test-Path $compiler)) {
+            throw "Inno Setup compiler was not found."
+          }
+
+          Push-Location $installer
+          try {
+            & $compiler "River.iss"
+            if ($LASTEXITCODE -ne 0) {
+              throw "Inno Setup compilation failed."
+            }
+          } finally {
+            Pop-Location
+          }
+
+          $exe = Join-Path $installer "output\River-Setup.exe"
+          if (-not (Test-Path $exe)) {
+            throw "River-Setup.exe was not generated."
+          }
+
+          Write-Output "Installer created: $exe"
+
+      - name: Upload River installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: River-Setup
+          path: ${{ runner.temp }}\RiverInstaller\installer\output\River-Setup.exe
+          if-no-files-found: error
+          retention-days: 14

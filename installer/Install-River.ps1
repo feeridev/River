@@ -1,5 +1,18 @@
 $ErrorActionPreference = "Stop"
 
+# Persist installation diagnostics on the customer's Windows PC.
+$InstallLogDir = Join-Path $env:ProgramData "River\MongoDB\logs"
+New-Item -ItemType Directory -Force -Path $InstallLogDir | Out-Null
+$InstallLog = Join-Path $InstallLogDir "river-install.log"
+Start-Transcript -Path $InstallLog -Append | Out-Null
+
+trap {
+    Write-Host ("INSTALLATION FAILED: " + $_.Exception.Message)
+    Write-Host ($_ | Out-String)
+    try { Stop-Transcript | Out-Null } catch {}
+    exit 1
+}
+
 $AppDir = Join-Path $env:ProgramFiles "River"
 $DataRoot = Join-Path $env:ProgramData "River"
 $ConfigDir = Join-Path $DataRoot "config"

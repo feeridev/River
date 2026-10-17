@@ -33,8 +33,12 @@ Source: "Install-River.ps1"; DestDir: "{app}"; Flags: ignoreversion
 Source: "RiverService.xml.template"; DestDir: "{app}"; Flags: ignoreversion
 Source: "mongodb-windows-x64.msi"; DestDir: "{app}"; Flags: ignoreversion
 
+[Tasks]
+Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription: "Additional shortcuts:"
+
 [Icons]
 Name: "{group}\River Helpdesk"; Filename: "http://127.0.0.1:5000"
+Name: "{autodesktop}\River Helpdesk"; Filename: "http://127.0.0.1:5000"; Tasks: desktopicon
 Name: "{group}\Uninstall River Helpdesk"; Filename: "{uninstallexe}"
 
 [Run]

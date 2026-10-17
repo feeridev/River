@@ -27,7 +27,6 @@ $RiverServiceExe = Join-Path $AppDir "RiverService.exe"
 $RiverServiceXml = Join-Path $AppDir "RiverService.xml"
 
 New-Item -ItemType Directory -Force -Path $ConfigDir, $MongoData, $MongoLogs | Out-Null
-
 # Install MongoDB binaries if needed.
 $mongoExe = Get-ChildItem "$env:ProgramFiles\MongoDB\Server\*\bin\mongod.exe" `
     -ErrorAction SilentlyContinue |
@@ -74,17 +73,29 @@ if (-not (Test-Path $MongoConfig)) {
     Set-Content -Path $MongoConfig -Value $config -Encoding ascii
 }
 
+
 # Create the dedicated MongoDB Windows service if needed.
 $mongoService = Get-Service -Name $MongoService -ErrorAction SilentlyContinue
 
 if (-not $mongoService) {
-    & $mongoExe.FullName --config $MongoConfig --install `
-        --serviceName $MongoService `
-        --serviceDisplayName "River MongoDB" `
-        --serviceDescription "Local database service for River Helpdesk"
+    # These arguments contain no spaces, avoiding ambiguous native argument quoting.
+    $mongoArguments = @(
+        '--config'
+        $MongoConfig
+        '--install'
+        '--serviceName'
+        $MongoService
+    )
 
-    if ($LASTEXITCODE -ne 0) {
-        throw "Could not register the River MongoDB service."
+    $mongoProcess = Start-Process `
+        -FilePath $mongoExe.FullName `
+        -ArgumentList $mongoArguments `
+        -Wait `
+        -PassThru `
+        -NoNewWindow
+
+    if ($mongoProcess.ExitCode -ne 0) {
+        throw "Could not register the River MongoDB service. MongoDB exit code: $($mongoProcess.ExitCode)"
     }
 }
 

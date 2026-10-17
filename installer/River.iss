@@ -41,11 +41,10 @@ Name: "{group}\River Helpdesk"; Filename: "http://127.0.0.1:5000"
 Name: "{autodesktop}\River Helpdesk"; Filename: "http://127.0.0.1:5000"; Tasks: desktopicon
 Name: "{group}\Uninstall River Helpdesk"; Filename: "{uninstallexe}"
 
-[Run]
-; Open River only after the installation script succeeds.
-Filename: "http://127.0.0.1:5000"; Flags: shellexec
-
 [Code]
+var
+  RiverInstallSucceeded: Boolean;
+
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 var
   ResultCode: Integer;
@@ -85,6 +84,8 @@ var
   ScriptPath: String;
 begin
   if CurStep = ssPostInstall then begin
+    RiverInstallSucceeded := False;
+
     PowerShellExe := ExpandConstant(
       '{sys}\WindowsPowerShell\v1.0\powershell.exe');
     ScriptPath := ExpandConstant('{app}\Install-River.ps1');
@@ -97,9 +98,20 @@ begin
     if ResultCode <> 0 then
       RaiseException('River installation failed with exit code ' +
         IntToStr(ResultCode) +
-        '. The browser will not be opened. Check the installer log and retry.');
+        '. Check the installer log and retry.');
+
+    { The installation script also verifies the application health endpoint. }
+    RiverInstallSucceeded := True;
   end;
 end;
+
+function ShouldLaunchRiver(): Boolean;
+begin
+  Result := RiverInstallSucceeded;
+end;
+
+[Run]
+Filename: "http://127.0.0.1:5000"; Description: "Open River Helpdesk"; Flags: shellexec; Check: ShouldLaunchRiver
 
 [UninstallRun]
 Filename: "{app}\RiverService.exe"; Parameters: "stop"; Flags: runhidden waituntilterminated; RunOnceId: "StopRiver"

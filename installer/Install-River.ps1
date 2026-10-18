@@ -129,7 +129,9 @@ if (-not $mongoServiceInfo) {
     & $mongoExe.FullName `
         --config "$MongoConfig" `
         --install `
-        --serviceName "$MongoServiceName"
+        --serviceName "$MongoServiceName" `
+        --serviceDisplayName "River MongoDB Server" `
+        --serviceDescription "MongoDB database service for River Helpdesk"
 
     $mongoExitCode = $LASTEXITCODE
 

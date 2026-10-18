@@ -6,7 +6,7 @@
   <depend>RiverMongoDB</depend>
 
   <executable>%BASE%\server\node.exe</executable>
-  <arguments>%BASE%\server\dist\server.js</arguments>
+  <arguments>"%BASE%\server\dist\server.js"</arguments>
   <workingdirectory>%BASE%\server</workingdirectory>
 
   <env name="NODE_ENV" value="production"/>

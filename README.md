@@ -1,132 +1,148 @@
 # River — Helpdesk Ticket Management System
 
 <p align="center">
-  <img width="180" alt="river-logo-ticket-400" src="https://github.com/user-attachments/assets/9d714cce-a464-4c71-b6a9-51b7ffaa9911" />
+  <img width="180" alt="River logo" src="https://github.com/user-attachments/assets/9d714cce-a464-4c71-b6a9-51b7ffaa9911" />
 </p>
 
 <p align="center">
-  <strong>A helpdesk backend for organizing technical support requests and managing ticket workflows.</strong>
+  <strong>A self-hosted helpdesk application for managing support tickets, tracking progress, and communicating with users.</strong>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Status-In%20Development-orange?style=for-the-badge" alt="In Development" />
-  <img src="https://img.shields.io/badge/Node.js-Runtime-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js" />
+  <a href="https://github.com/feeridev/River/actions/workflows/windows-installer.yml">
+    <img src="https://img.shields.io/badge/Download-Windows%20Installer-2ea44f?style=for-the-badge&logo=windows&logoColor=white" alt="Download River for Windows" />
+  </a>
+  <a href="https://github.com/feeridev/River">
+    <img src="https://img.shields.io/badge/Source-GitHub-181717?style=for-the-badge&logo=github" alt="River source code on GitHub" />
+  </a>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Status-Active%20Development-orange?style=for-the-badge" alt="Active development" />
+  <img src="https://img.shields.io/badge/React-TypeScript-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React and TypeScript" />
+  <img src="https://img.shields.io/badge/Node.js-Backend-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js" />
   <img src="https://img.shields.io/badge/Express-5-000000?style=for-the-badge&logo=express&logoColor=white" alt="Express 5" />
-  <img src="https://img.shields.io/badge/TypeScript-Backend-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
   <img src="https://img.shields.io/badge/MongoDB-Database-47A248?style=for-the-badge&logo=mongodb&logoColor=white" alt="MongoDB" />
-</p>
-
-<p align="center">
-  <img src="https://img.shields.io/badge/JWT-Authentication-000000?style=flat-square&logo=jsonwebtokens&logoColor=white" alt="JWT" />
-  <img src="https://img.shields.io/badge/Zod-Validation-3E67B1?style=flat-square" alt="Zod" />
-  <img src="https://img.shields.io/badge/bcrypt-Password%20Hashing-5C6BC0?style=flat-square" alt="bcrypt" />
-  <img src="https://img.shields.io/badge/REST%20API-Backend-6C757D?style=flat-square" alt="REST API" />
 </p>
 
 ---
 
-## About
+## Download River
 
-River is a helpdesk ticket management system designed to organize technical support requests, track ticket progress, and provide a foundation for role-based support workflows.
+**Want to try River on Windows?**
 
-The project is being developed incrementally, starting with a secure REST API and expanding toward a complete helpdesk application.
+### [Download the latest Windows installer](https://github.com/feeridev/River/actions/workflows/windows-installer.yml)
 
-## Architecture & Workflow
+1. Open the Windows Installer workflow.
+2. Select the latest successful workflow run.
+3. Find the **Artifacts** section and download the installer ZIP.
+4. Extract the ZIP and run the setup executable as administrator.
+5. Once installation finishes, open [http://127.0.0.1:5000](http://127.0.0.1:5000).
+
+The installer configures River and its MongoDB Windows service for local use.
+
+> **Note:** GitHub Actions artifacts may require a GitHub sign-in and can expire. A versioned GitHub Release will provide a more stable public download link as the project matures.
+
+## About River
+
+River is a self-hosted helpdesk ticket management system designed to organize technical support requests in one place.
+
+Instead of relying on a hosted helpdesk service, River is designed to run on a local Windows machine or server. Users can create tickets, track their status, view ticket details, and communicate through ticket replies.
+
+The project combines a React frontend, a Node.js and Express API, and MongoDB persistence, with a Windows installer for easier deployment.
+
+River is actively developed, with additional administrative and support-agent capabilities planned.
+
+## Features
+
+- **Authentication** — account registration and login with JWT-based authentication.
+- **Ticket creation** — submit technical support requests with validated information.
+- **Ticket dashboard** — review tickets, view ticket details, and filter ticket lists.
+- **Status management** — track tickets through Open, In Progress, Resolved, and Closed.
+- **Ticket conversations** — add replies to ticket discussions.
+- **Priorities** — categorize urgency as Low, Medium, High, or Critical.
+- **Categories** — organize tickets by Hardware, Software, Network, Account, Access, or Other.
+- **Persistent storage** — retain application data in MongoDB.
+- **Input validation** — validate request data using Zod.
+- **Password security** — hash passwords with bcrypt.
+- **Windows deployment** — install and run River as a Windows service with its MongoDB service.
+
+Role definitions include Employee, Agent, and Admin. Full administrative tools and agent workflows remain under development.
+
+## Architecture
 
 <p align="center">
   <img src="https://github.com/user-attachments/assets/3d187a76-8535-4075-9deb-65f2d35448a0" alt="River backend architecture and ticket workflow" width="700" />
 </p>
 
-<p align="center">
-  <sub>Ticket creation workflow — from request validation to database storage.</sub>
-</p>
+At a high level, a ticket request follows this process:
 
-### Current ticket creation flow
-
-1. Receive a ticket creation request.
-2. Authenticate the user using a JWT.
-3. Verify that the account is active.
-4. Validate the submitted ticket data.
-5. Apply default values and associate the creator.
-6. Save the ticket to MongoDB.
-7. Return a `201 Created` response.
+1. The client sends a request to the API.
+2. Authentication middleware verifies the user's identity.
+3. The server validates the submitted data.
+4. Application logic applies the appropriate rules.
+5. MongoDB stores the ticket or related information.
+6. The API returns a response to the client.
 
 ## Technology Stack
 
 | Technology | Purpose |
 |---|---|
-| Node.js | JavaScript runtime |
+| React | Frontend user interface |
+| TypeScript | Typed application development |
+| Vite | Frontend development tooling |
+| Node.js | Backend runtime |
 | Express 5 | REST API and routing |
-| TypeScript | Type-safe backend development |
-| MongoDB | Database |
+| MongoDB | Persistent data storage |
 | JWT | Authentication |
 | bcrypt | Password hashing |
 | Zod | Request validation |
+| Inno Setup | Windows installer |
+| WinSW | Windows service management |
 
-## Implemented Features
+## Running River on Windows
 
-- [x] User registration and login
-- [x] Password hashing with bcrypt
-- [x] JWT-based authentication
-- [x] Active-account verification
-- [x] Role definitions for employees, agents, and administrators
-- [x] Ticket creation with validated input
-- [x] Ticket categories and priorities
-- [x] Default ticket status and priority
-- [x] MongoDB indexes for user lookup and ticket queries
+The recommended way to try River is to use the Windows installer linked above.
 
-> **Development note:** River is a work in progress. Ticket assignment, status management, and the frontend are planned but are not yet implemented.
+After installation, access the application locally:
 
-## API Overview
+**Application:** [http://127.0.0.1:5000](http://127.0.0.1:5000)
 
-Base URL for local development:
+The installer configures the application and database services. River's database and configuration are stored separately from the application files so that they can be retained during application maintenance and upgrades.
 
-`http://localhost:5000`
+Always back up application data and configuration before performing maintenance or uninstalling software.
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/health` | Health check |
-| `POST` | `/api/auth/register` | Register an account |
-| `POST` | `/api/auth/login` | Log in |
-| `GET` | `/api/auth/me` | Get the authenticated identity |
-| `POST` | `/api/tickets` | Create a ticket |
+## Development Setup
 
-Protected endpoints require a valid bearer token:
-
-```http
-Authorization: Bearer <your-token>
-```
-
-## Getting Started
+If you want to explore the source code or contribute to development, you can run River from the repository.
 
 ### Prerequisites
 
+- Git
 - Node.js and npm
 - MongoDB
-- Git
 
 ### 1. Clone the repository
 
 ```bash
 git clone https://github.com/feeridev/River.git
-cd River/server
+cd River
 ```
 
-### 2. Install dependencies
+### 2. Configure the backend
 
 ```bash
+cd server
 npm install
 ```
 
-### 3. Configure environment variables
-
-Copy the example environment file:
+Create a `.env` file from the provided example:
 
 ```bash
 cp .env.example .env
 ```
 
-Configure the values in `.env`:
+Configure the required environment variables:
 
 ```env
 PORT=5000
@@ -134,89 +150,168 @@ MONGODB_URI=mongodb://127.0.0.1:27017/river
 JWT_SECRET=replace_with_a_long_random_secret
 ```
 
-Generate a strong secret locally:
+Generate a strong JWT secret locally:
 
 ```bash
 openssl rand -hex 32
 ```
 
-Use the generated value for `JWT_SECRET`. Never commit your real `.env` file.
+Put the generated value in `JWT_SECRET`. Never commit your actual `.env` file or production secrets.
 
-### 4. Start MongoDB
+### 3. Start MongoDB
 
-Ensure your MongoDB service is running before starting the API.
+Make sure MongoDB is installed and running, and that `MONGODB_URI` points to the correct database.
 
-On systems using systemd:
+On Linux systems using systemd, the service may be started with:
 
 ```bash
 sudo systemctl start mongod
 ```
 
-### 5. Start the development server
+The service name and startup procedure can vary by operating system and installation method.
+
+### 4. Start the backend
+
+From the `server` directory:
 
 ```bash
 npm run dev
 ```
 
-The API will run at:
+The API should be available at:
 
-`http://localhost:5000`
+`http://127.0.0.1:5000`
 
-### 6. Build for production
+You can check its health endpoint at:
+
+`http://127.0.0.1:5000/api/health`
+
+### 5. Start the frontend
+
+Open a second terminal from the repository root:
+
+```bash
+cd client
+npm install
+npm run dev
+```
+
+Vite normally serves the development frontend at:
+
+`http://localhost:5173`
+
+### 6. Build the backend
+
+From the `server` directory:
 
 ```bash
 npm run build
 npm start
 ```
 
+Check the `package.json` files in `server` and `client` for the available scripts and their exact behavior.
+
+## API Overview
+
+The local API base URL is:
+
+`http://127.0.0.1:5000`
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/health` | Check API health |
+| `POST` | `/api/auth/register` | Register an account |
+| `POST` | `/api/auth/login` | Authenticate a user |
+| `GET` | `/api/auth/me` | Retrieve the authenticated user's identity |
+| `POST` | `/api/tickets` | Create a ticket |
+
+Additional API routes support ticket retrieval, ticket updates, status management, and conversations.
+
+Protected endpoints use bearer-token authentication:
+
+```http
+Authorization: Bearer <your-token>
+```
+
+## Ticket Categories, Priorities, and Statuses
+
+**Categories**
+
+- Hardware
+- Software
+- Network
+- Account
+- Access
+- Other
+
+**Priorities**
+
+- Low
+- Medium
+- High
+- Critical
+
+**Statuses**
+
+- Open
+- In Progress
+- Resolved
+- Closed
+
 ## Project Structure
 
 ```text
 River/
+├── client/                  # React frontend
+├── server/                  # Express backend
+│   ├── scripts/
+│   └── src/
+│       ├── config/
+│       ├── middleware/
+│       ├── models/
+│       ├── repositories/
+│       ├── routes/
+│       ├── services/
+│       ├── utils/
+│       ├── validation/
+│       ├── app.ts
+│       └── server.ts
+├── installer/               # Windows installer configuration
 ├── .gitignore
-└── server/
-    ├── scripts/
-    ├── src/
-    │   ├── config/
-    │   ├── middleware/
-    │   ├── models/
-    │   ├── repositories/
-    │   ├── routes/
-    │   ├── services/
-    │   ├── utils/
-    │   ├── validation/
-    │   ├── app.ts
-    │   └── server.ts
-    ├── .env.example
-    ├── package.json
-    └── tsconfig.json
+└── README.md
 ```
 
 ## Roadmap
 
-- [ ] Ticket listing and filtering
-- [ ] Ticket assignment to support agents
-- [ ] Ticket status updates and resolution
-- [ ] Role-based authorization for helpdesk operations
-- [ ] Ticket history and comments
-- [ ] Automated tests
-- [ ] React and TypeScript frontend
-- [ ] Deployment and installation documentation
+- [x] User registration and authentication
+- [x] Password hashing and JWT authentication
+- [x] Ticket creation and retrieval
+- [x] Ticket details and conversations
+- [x] Ticket status management
+- [x] Dashboard and ticket filtering
+- [x] MongoDB persistence
+- [x] Windows installer and service configuration
+- [ ] Complete administrative tools
+- [ ] Complete agent workflows and ticket assignment
+- [ ] Expand automated test coverage
+- [ ] Improve deployment and upgrade documentation
+- [ ] Publish versioned releases with stable downloads
 
 ## Development Philosophy
 
-River is built step by step, with an emphasis on understanding the implementation, validating inputs, protecting user accounts, and keeping the codebase maintainable.
+River is built incrementally, with an emphasis on practical functionality, secure authentication, maintainable architecture, and reliable local deployment.
 
-The goal is to build a practical helpdesk system while documenting the engineering decisions and development process along the way.
+The goal is to create a useful helpdesk application that can run on a customer's own machine or server without requiring a hosted SaaS platform.
 
 ## Author
 
 **Farshad Safarkhanloo**
 
 - GitHub: [@feeridev](https://github.com/feeridev)
+- Repository: [github.com/feeridev/River](https://github.com/feeridev/River)
 
 ---
 
 <p align="center">
-  <sub>River is an independent portfolio project and is actively being developed.</sub>
+  <sub>River — a self-hosted helpdesk application under active development.</sub>
 </p>

@@ -41,7 +41,7 @@
 
 The installer configures River and its MongoDB Windows service for local use.
 
-> **Note:** GitHub Actions artifacts may require a GitHub sign-in and can expire. A versioned GitHub Release will provide a more stable public download link as the project matures.
+
 
 ## About River
 

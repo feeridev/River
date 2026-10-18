@@ -21,7 +21,7 @@ $MongoRoot = Join-Path $DataRoot "MongoDB"
 $MongoData = Join-Path $MongoRoot "data"
 $MongoLogs = Join-Path $MongoRoot "logs"
 $MongoConfig = Join-Path $MongoRoot "mongod.cfg"
-$MongoService = "RiverMongoDB"
+$MongoServiceName = "RiverMongoDB"
 $EnvFile = Join-Path $ConfigDir ".env"
 $MongoMsi = Join-Path $AppDir "mongodb-windows-x64.msi"
 $RiverServiceExe = Join-Path $AppDir "RiverService.exe"
@@ -107,56 +107,55 @@ if (-not (Test-Path -LiteralPath $MongoConfig)) {
 
 Write-Output "MongoDB configuration: $MongoConfig"
 
-# Validate the configuration before registering or starting the service.
-# mongod --config <path> --outputConfig prints the effective configuration.
-# Do not use --install for this validation step.
+# Validate MongoDB configuration before registering the service.
 Write-Output "Validating MongoDB configuration..."
 
 & $mongoExe.FullName --config "$MongoConfig" --outputConfig 2>&1 |
     ForEach-Object { Write-Output $_ }
 
-if ($LASTEXITCODE -ne 0) {
-    throw "MongoDB configuration validation failed with exit code $LASTEXITCODE. Check the configuration and installer log."
+$mongoValidationExitCode = $LASTEXITCODE
+
+if ($mongoValidationExitCode -ne 0) {
+    throw "MongoDB configuration validation failed with exit code $mongoValidationExitCode. Check the installer log."
 }
 
 # Register River's dedicated MongoDB service if it does not exist.
-# Use direct invocation so PowerShell handles the executable arguments.
-# The existing default MongoDB service is not modified.
-$mongoService = Get-Service -Name $MongoService -ErrorAction SilentlyContinue
+# Keep the existing default MongoDB service untouched.
+$mongoServiceInfo = Get-Service -Name $MongoServiceName -ErrorAction SilentlyContinue
 
-if (-not $mongoService) {
-    Write-Output "Registering the $MongoService Windows service..."
+if (-not $mongoServiceInfo) {
+    Write-Output "Registering the $MongoServiceName Windows service..."
 
     & $mongoExe.FullName `
         --config "$MongoConfig" `
         --install `
-        --serviceName "$MongoService"
+        --serviceName "$MongoServiceName"
 
     $mongoExitCode = $LASTEXITCODE
 
     if ($mongoExitCode -ne 0) {
-        throw "Could not register the $MongoService service. MongoDB exit code: $mongoExitCode. Review the MongoDB command output above."
+        throw "Could not register the $MongoServiceName service. MongoDB exit code: $mongoExitCode. Review the MongoDB command output above."
     }
 }
 
-# Confirm Windows can see the newly registered service.
-$mongoService = Get-Service -Name $MongoService -ErrorAction SilentlyContinue
+# Confirm Windows can see the registered service.
+$mongoServiceInfo = Get-Service -Name $MongoServiceName -ErrorAction SilentlyContinue
 
-if (-not $mongoService) {
-    throw "MongoDB reported successful registration, but Windows cannot find the $MongoService service."
+if (-not $mongoServiceInfo) {
+    throw "MongoDB reported successful registration, but Windows cannot find the $MongoServiceName service."
 }
 
-Set-Service -Name $MongoService -StartupType Automatic
+Set-Service -Name $MongoServiceName -StartupType Automatic
 
-$mongoService = Get-Service -Name $MongoService
+$mongoServiceInfo = Get-Service -Name $MongoServiceName
 
-if ($mongoService.Status -ne "Running") {
-    Write-Output "Starting the $MongoService service..."
-    Start-Service -Name $MongoService
+if ($mongoServiceInfo.Status -ne "Running") {
+    Write-Output "Starting the $MongoServiceName service..."
+    Start-Service -Name $MongoServiceName
 }
 
 # Generate customer configuration only on first installation.
-# Keep the existing JWT secret and connection settings on upgrades.
+# Preserve existing JWT secret and settings during upgrades.
 if (-not (Test-Path -LiteralPath $EnvFile)) {
     Write-Output "Creating the initial River environment configuration..."
 
@@ -199,6 +198,7 @@ $mongoReady = $false
 
 do {
     $tcp = $null
+    $connect = $null
 
     try {
         $tcp = New-Object System.Net.Sockets.TcpClient
@@ -208,13 +208,15 @@ do {
             $tcp.EndConnect($connect)
             $mongoReady = $true
         }
-
-        $connect.AsyncWaitHandle.Close()
     }
     catch {
         # MongoDB may still be starting; retry until timeout.
     }
     finally {
+        if ($connect -and $connect.AsyncWaitHandle) {
+            $connect.AsyncWaitHandle.Close()
+        }
+
         if ($tcp) {
             $tcp.Close()
         }
@@ -227,16 +229,16 @@ do {
 until ($mongoReady -or (Get-Date) -ge $deadline)
 
 if (-not $mongoReady) {
-    $mongoService = Get-Service -Name $MongoService -ErrorAction SilentlyContinue
+    $mongoServiceInfo = Get-Service -Name $MongoServiceName -ErrorAction SilentlyContinue
 
-    if ($mongoService) {
-        Write-Output "MongoDB service status: $($mongoService.Status)"
+    if ($mongoServiceInfo) {
+        Write-Output "MongoDB service status: $($mongoServiceInfo.Status)"
     }
 
     throw "River MongoDB did not become ready on localhost:27017 within two minutes. Check $MongoLogFile."
 }
 
-# Verify the River service wrapper and its configuration template.
+# Verify the River service wrapper and configuration template.
 if (-not (Test-Path -LiteralPath $RiverServiceExe)) {
     throw "River service wrapper is missing: $RiverServiceExe"
 }
@@ -247,7 +249,7 @@ if (-not (Test-Path -LiteralPath $serviceTemplatePath)) {
     throw "River service template is missing: $serviceTemplatePath"
 }
 
-# Generate WinSW service configuration using the persistent .env path.
+# Generate WinSW configuration using the persistent .env path.
 $xml = Get-Content -LiteralPath $serviceTemplatePath -Raw
 $xml = $xml.Replace("__RIVER_CONFIG_PATH__", $EnvFile)
 
@@ -332,10 +334,10 @@ do {
 until ($riverReady -or (Get-Date) -ge $deadline)
 
 if (-not $riverReady) {
-    $riverService = Get-Service -Name "River" -ErrorAction SilentlyContinue
+    $riverServiceInfo = Get-Service -Name "River" -ErrorAction SilentlyContinue
 
-    if ($riverService) {
-        Write-Output "River service status: $($riverService.Status)"
+    if ($riverServiceInfo) {
+        Write-Output "River service status: $($riverServiceInfo.Status)"
     }
 
     throw "River did not become healthy at http://127.0.0.1:5000/api/health within two minutes. Check the River service logs and configuration."
@@ -347,7 +349,7 @@ try {
     Stop-Transcript | Out-Null
 }
 catch {
-    # The installation is already complete.
+    # Installation is complete.
 }
 
 exit 0

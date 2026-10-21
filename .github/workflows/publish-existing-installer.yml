@@ -1,0 +1,45 @@
+
+name: Publish Existing River Installer
+
+on:
+  workflow_dispatch:
+    inputs:
+      artifact_run_id:
+        description: "GitHub Actions run ID that contains River-Setup"
+        required: true
+        type: string
+      tag_name:
+        description: "Existing release tag, e.g. v0.1.0"
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download existing installer artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: River-Setup
+          path: downloaded-installer
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ inputs.artifact_run_id }}
+
+      - name: Verify installer
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s downloaded-installer/River-Setup.exe
+          ls -lh downloaded-installer/River-Setup.exe
+
+      - name: Attach installer to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag_name }}
+          files: downloaded-installer/River-Setup.exe
+          fail_on_unmatched_files: true

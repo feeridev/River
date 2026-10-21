@@ -9,8 +9,11 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/feeridev/River/actions/workflows/windows-installer.yml">
+  <a href="https://github.com/feeridev/River/releases/latest">
     <img src="https://img.shields.io/badge/Download-Windows%20Installer-2ea44f?style=for-the-badge&logo=windows&logoColor=white" alt="Download River for Windows" />
+  </a>
+  <a href="https://github.com/feeridev/River/releases">
+    <img src="https://img.shields.io/badge/Releases-GitHub-181717?style=for-the-badge&logo=github" alt="River releases" />
   </a>
   <a href="https://github.com/feeridev/River">
     <img src="https://img.shields.io/badge/Source-GitHub-181717?style=for-the-badge&logo=github" alt="River source code on GitHub" />
@@ -18,7 +21,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Status-Active%20Development-orange?style=for-the-badge" alt="Active development" />
+  <img src="https://img.shields.io/badge/Status-Early%20Access-orange?style=for-the-badge" alt="Early access" />
   <img src="https://img.shields.io/badge/React-TypeScript-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React and TypeScript" />
   <img src="https://img.shields.io/badge/Node.js-Backend-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js" />
   <img src="https://img.shields.io/badge/Express-5-000000?style=for-the-badge&logo=express&logoColor=white" alt="Express 5" />
@@ -31,25 +34,27 @@
 
 **Want to try River on Windows?**
 
-### [Download the latest Windows installer](https://github.com/feeridev/River/actions/workflows/windows-installer.yml)
+### [Download the latest release](https://github.com/feeridev/River/releases/latest)
 
-1. Open the Windows Installer workflow.
-2. Select the latest successful workflow run.
-3. Find the **Artifacts** section and download the installer ZIP.
-4. Extract the ZIP and run the setup executable as administrator.
-5. Once installation finishes, open [http://127.0.0.1:5000](http://127.0.0.1:5000).
+1. Open the latest River release.
+2. Find the **Assets** section.
+3. Download the Windows installer (`.exe`).
+4. Run the installer and follow the setup instructions.
+5. After installation, try opening [http://127.0.0.1:5000](http://127.0.0.1:5000).
 
-The installer configures River and its MongoDB Windows service for local use.
+River is designed to run locally, with its application and database services configured for Windows.
 
+> **Early access:** River is under active development. Installation, compatibility, and upgrade behavior have not yet been verified across all environments. Back up important data before performing maintenance or uninstalling the application. Report problems through [GitHub Issues](https://github.com/feeridev/River/issues).
 
+---
 
 ## About River
 
 River is a self-hosted helpdesk ticket management system designed to organize technical support requests in one place.
 
-Instead of relying on a hosted helpdesk service, River is designed to run on a local Windows machine or server. Users can create tickets, track their status, view ticket details, and communicate through ticket replies.
+Rather than relying on a hosted helpdesk service, River is designed to run on a local Windows machine or server. Users can create tickets, track their status, view ticket details, and communicate through ticket replies.
 
-The project combines a React frontend, a Node.js and Express API, and MongoDB persistence, with a Windows installer for easier deployment.
+The project combines a React frontend, a Node.js and Express API, and MongoDB persistence, with a Windows installer intended to simplify deployment.
 
 River is actively developed, with additional administrative and support-agent capabilities planned.
 
@@ -65,9 +70,9 @@ River is actively developed, with additional administrative and support-agent ca
 - **Persistent storage** — retain application data in MongoDB.
 - **Input validation** — validate request data using Zod.
 - **Password security** — hash passwords with bcrypt.
-- **Windows deployment** — install and run River as a Windows service with its MongoDB service.
+- **Windows deployment** — installer and service configuration for local deployment.
 
-Role definitions include Employee, Agent, and Admin. Full administrative tools and agent workflows remain under development.
+River defines three user roles: Employee, Agent, and Admin. Full administrative tools and agent workflows remain under development.
 
 ## Architecture
 
@@ -102,15 +107,15 @@ At a high level, a ticket request follows this process:
 
 ## Running River on Windows
 
-The recommended way to try River is to use the Windows installer linked above.
+The recommended way to try River is to download the installer from the [latest release](https://github.com/feeridev/River/releases/latest).
 
 After installation, access the application locally:
 
 **Application:** [http://127.0.0.1:5000](http://127.0.0.1:5000)
 
-The installer configures the application and database services. River's database and configuration are stored separately from the application files so that they can be retained during application maintenance and upgrades.
+The installer is designed to configure the application and database services. Application data and configuration are intended to be stored separately from application files so they can be retained during maintenance and upgrades.
 
-Always back up application data and configuration before performing maintenance or uninstalling software.
+Because this is an early-access release, verify the installation and backup procedures before using River for important support data.
 
 ## Development Setup
 
@@ -200,7 +205,7 @@ Vite normally serves the development frontend at:
 
 `http://localhost:5173`
 
-### 6. Build the backend
+### 6. Build and run the backend
 
 From the `server` directory:
 
@@ -290,12 +295,13 @@ River/
 - [x] Ticket status management
 - [x] Dashboard and ticket filtering
 - [x] MongoDB persistence
-- [x] Windows installer and service configuration
+- [x] Windows installer build
+- [x] Publish an initial versioned release
+- [ ] Verify Windows installation across supported environments
 - [ ] Complete administrative tools
 - [ ] Complete agent workflows and ticket assignment
 - [ ] Expand automated test coverage
 - [ ] Improve deployment and upgrade documentation
-- [ ] Publish versioned releases with stable downloads
 
 ## Development Philosophy
 
@@ -309,6 +315,8 @@ The goal is to create a useful helpdesk application that can run on a customer's
 
 - GitHub: [@feeridev](https://github.com/feeridev)
 - Repository: [github.com/feeridev/River](https://github.com/feeridev/River)
+- Releases: [Download River](https://github.com/feeridev/River/releases/latest)
+- Issues and feedback: [GitHub Issues](https://github.com/feeridev/River/issues)
 
 ---
 
